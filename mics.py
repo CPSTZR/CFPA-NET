@@ -1,8 +1,6 @@
 import torch
 import numpy as np
 from scipy import ndimage
-from medpy import metric
-import imageio
 
 
 class AvgMeter(object):
@@ -32,7 +30,6 @@ def Meandice(preds, gts):
     bs = gts.shape[0]
     b = 0
     for i, pred in enumerate(preds):
-        # res = pred.data.cpu().numpy()
         res = pred
         gt = gts[i]
         res = res.sigmoid().data.cpu().numpy()
@@ -41,12 +38,8 @@ def Meandice(preds, gts):
         gt = np.asarray(gt, np.float32)
         gt /= (gt.max() + 1e-8)
 
-        gt[gt > 0.5] = 1
-        gt[gt != 1] = 0
-
         input = res
         target = np.array(gt)
-        # N = gt.shape
         smooth = 1e-5
         input_flat = np.reshape(input, (-1))
         target_flat = np.reshape(target, (-1))
@@ -69,8 +62,6 @@ def cal(preds, gts, ii):
 
         res = res.sigmoid().data.cpu().numpy()
         res = (res - res.min()) / (res.max() - res.min() + 1e-8)
-        res[res > 0.5] = 1.0
-        res[res != 1] = 0.0
 
         gt = np.asarray(gt, np.float32)
         gt[gt > 0.5] = 1
@@ -78,7 +69,6 @@ def cal(preds, gts, ii):
 
         input = res
         target = np.array(gt)
-        imageio.imwrite(('preds/' + ii[i]), res)
         m_dice.update(input, target)
         m_iou.update(input, target)
         mmae.update(input, target)
@@ -102,11 +92,6 @@ class cal_dice(object):
         self.prediction.append(score)
 
     def cal(self, y_pred, y_true):
-        #
-        if y_true.sum() == 0 and y_pred.sum() != 0:
-            return 0.0
-        if y_true.sum() == 0 and y_pred.sum() == 0:
-            return 1.0
         # smooth = 1
         smooth = 1e-5
         y_true_f = y_true.flatten()
@@ -130,11 +115,6 @@ class cal_iou(object):
         self.prediction.append(score)
 
     def cal(self, input, target):
-        if target.sum() == 0 and input.sum() != 0:
-            return 0.0
-        if target.sum() == 0 and input.sum() == 0:
-            return 1.0
-
         smooth = 1e-5
         input = input > 0.5
         target_ = target > 0.5
