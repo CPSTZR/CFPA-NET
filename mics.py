@@ -36,7 +36,8 @@ def Meandice(preds, gts):
         res = (res - res.min()) / (res.max() - res.min() + 1e-8)
 
         gt = np.asarray(gt, np.float32)
-        gt /= (gt.max() + 1e-8)
+        gt[gt > 0.5] = 1
+        gt[gt != 1] = 0
 
         input = res
         target = np.array(gt)
