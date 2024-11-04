@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from network.Res2Net_v1b import res2net50_v1b_26w_4s
+from network.Res2Net import res2net50_v1b_26w_4s
 
 
 class BasicConv2d(nn.Module):
@@ -90,9 +90,9 @@ class FeatureAggregationDecoder(nn.Module):
         return x
 
 
-class RAP(nn.Module):
+class FCPModule(nn.Module):
     def __init__(self, channel):
-        super(RAP, self).__init__()
+        super(FCPModule, self).__init__()
         self.channel = channel
         self.conv1 = BasicConv2d(self.channel, self.channel, kernel_size=3, padding=1)
         self.conv1_1 = BasicConv2d(self.channel, 1, kernel_size=1, padding=0)
@@ -124,9 +124,9 @@ class Network(nn.Module):
         self.FAD = FeatureAggregationDecoder(channel)
 
         # # ---- reverse stage ----
-        self.RAP5 = RAP(32)
-        self.RAP4 = RAP(32)
-        self.RAP3 = RAP(32)
+        self.FCPM5 = FCPModule(32)
+        self.FCPM4 = FCPModule(32)
+        self.FCPM3 = FCPModule(32)
 
     def forward(self, x):
         # Feature Extraction
@@ -150,19 +150,19 @@ class Network(nn.Module):
         #
         # # ---- reverse stage 5 ----
         guidance_g = F.interpolate(S_g, scale_factor=0.25, mode='bilinear')
-        ra4_feat = self.RAP5(guidance_g, x4_rfb)
+        ra4_feat = self.FCPM5(guidance_g, x4_rfb)
         S_5 = ra4_feat + guidance_g
         S_5_pred = F.interpolate(S_5, scale_factor=32, mode='bilinear')  # Sup-2 (bs, 1, 11, 11) -> (bs, 1, 352, 352)
 
         # ---- reverse stage 4 ----
         guidance_5 = F.interpolate(S_5, scale_factor=2, mode='bilinear')
-        ra3_feat = self.RAP4(guidance_5, x3_rfb)
+        ra3_feat = self.FCPM4(guidance_5, x3_rfb)
         S_4 = ra3_feat + guidance_5
         S_4_pred = F.interpolate(S_4, scale_factor=16, mode='bilinear')
 
         # ---- reverse stage 3 ----
         guidance_4 = F.interpolate(S_4, scale_factor=2, mode='bilinear')
-        ra2_feat = self.RAP3(guidance_4, x2_rfb)
+        ra2_feat = self.FCPM3(guidance_4, x2_rfb)
         S_3 = ra2_feat + guidance_4
         S_3_pred = F.interpolate(S_3, scale_factor=8, mode='bilinear')
 
@@ -170,7 +170,7 @@ class Network(nn.Module):
 
 
 if __name__ == '__main__':
-    net = Network()
+    net = Network(imagenet_pretrained=False)
     net.eval()
 
     dump_x = torch.randn(1, 3, 352, 352)
