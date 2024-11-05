@@ -1,2 +1,2 @@
 # CFPA-NET
-A network for image lesion segmentation
+A network for medical image lesion segmentation
