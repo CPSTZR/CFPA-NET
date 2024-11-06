@@ -67,4 +67,4 @@ if __name__ == "__main__":
     model = Network().cuda()
     model.load_state_dict(torch.load('CFRA-best.pth'))
     val_loader = DataLoader(val_set, batch_size=8, num_workers=0, shuffle=False)
-
+    dice, iou, mae, sm = validation(model, val_loader)

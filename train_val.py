@@ -52,21 +52,18 @@ def train(model, train_loader, optimizer):
     model.train()
     loss_record = AvgMeter()
     for pack in tqdm(train_loader):
+        optimizer.zero_grad()
         image, gt, label = pack
         image = Variable(image).cuda()
         gts = Variable(gt).cuda()
         bs = image.shape[0]
-        with amp.autocast(enabled=use_fp16):
-            preds = model(image)
-            # loss_init = structure_loss(preds[0], gts) + structure_loss(preds[1], gts) + structure_loss(preds[2], gts)
-            # loss_final = structure_loss(preds[3], gts)
-            # loss = loss_init + loss_final
-            loss = structure_loss(preds,gts)
-        optimizer.zero_grad()
-        scaler.scale(loss).backward()
+        preds = model(image)
+        loss = structure_loss(preds[0], gts) + structure_loss(preds[1], gts) + structure_loss(preds[2],
+                                                                                                   gts) + structure_loss(
+            preds[3], gts)
+        loss.backward()
         clip_gradient(optimizer, 0.5)
-        scaler.step(optimizer)
-        scaler.update()
+        optimizer.step()
         loss_record.update(loss.item(), bs)
     return loss_record.avg
 
@@ -79,7 +76,6 @@ def validation(model, val_loader):
             image, gt, label = pack
             bs = gt.shape[0]
             image = Variable(image).cuda()
-            # gt = Variable(gt).cuda()
             preds = model(image)
             dice = Meandice(preds, gt)
             meandice.update(dice, bs)
@@ -114,5 +110,3 @@ if __name__ == "__main__":
             save_path = 'KVASIR3/CFRA-best.pth'
             torch.save(model.state_dict(), save_path)
             print('[Saving best:]', save_path, meandice)
-
-

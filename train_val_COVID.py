@@ -55,9 +55,9 @@ def train(model, train_loader, optimizer):
         gts = Variable(gt).cuda()
         bs = image.shape[0]
         preds = model(image)
-        loss_init = structure_loss(preds[0], gts) + structure_loss(preds[1], gts) + structure_loss(preds[2], gts)
-        loss_final = structure_loss(preds[3], gts)
-        loss = loss_init + loss_final
+        loss = structure_loss(preds[0], gts) + structure_loss(preds[1], gts) + structure_loss(preds[2],
+                                                                                              gts) + structure_loss(
+            preds[3], gts)
         loss.backward()
         clip_gradient(optimizer, 0.5)
         optimizer.step()
@@ -73,7 +73,6 @@ def validation(model, val_loader):
             image, gt, label = pack
             bs = gt.shape[0]
             image = Variable(image).cuda()
-            # gt = Variable(gt).cuda()
             preds = model(image)
             dice = Meandice(preds[3], gt)
             meandice.update(dice, bs)
